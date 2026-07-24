@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Level 1 – Die Grundlagen</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ==================== GAME SCREEN ==================== -->
+<div id="screen-game" class="screen active">
+  <div class="game-hud">
+    <button class="back-btn" onclick="playClick(); window.location.href='index.html'">← Menü</button>
+    <div class="hud-center">
+      <span class="hud-level" id="hudLevel">Level 1</span>
+      <div class="hud-progress-bar"><div id="hudProgress" class="hud-progress-fill"></div></div>
+    </div>
+    <div class="hud-score">
+      <span>⭐ <span id="hudScore">0</span></span>
+    </div>
+  </div>
+
+  <div id="gameContent" class="game-content"></div>
+</div>
+
+<!-- ==================== RESULT OVERLAY ==================== -->
+<div id="overlay-result" class="overlay hidden">
+  <div class="result-box">
+    <div id="resultEmoji" class="result-emoji">🎉</div>
+    <h2 id="resultTitle">Geschafft!</h2>
+    <p id="resultText"></p>
+    <div id="resultStars" class="result-stars"></div>
+    <div class="result-buttons">
+      <button class="btn-menu btn-secondary" onclick="playClick(); window.location.href='index.html'">Level-Auswahl</button>
+      <button class="btn-menu" id="btnNextLevel" onclick="playClick(); window.location.href='level2.html'">Level 2 ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PART INFO OVERLAY ==================== -->
+<div id="overlay-info" class="overlay hidden">
+  <div class="info-box">
+    <button class="close-btn" onclick="closeInfo()">✕</button>
+    <div id="infoPartSvg" class="info-part-svg"></div>
+    <h2 id="infoTitle"></h2>
+    <p id="infoDesc"></p>
+    <div id="infoFacts" class="info-facts"></div>
+    <button class="btn-menu" onclick="closeInfo()">Verstanden! 👍</button>
+  </div>
+</div>
+
+<script>
+// ==================== SOUND ====================
+let soundOn = true;
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+  return audioCtx;
+}
+function playTone(freq, type = 'sine', duration = 0.15, vol = 0.15, delay = 0) {
+  if (!soundOn) return;
+  const ctx = getAudioCtx(); if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.value = vol;
+  osc.connect(gain); gain.connect(ctx.destination);
+  const t = ctx.currentTime + delay;
+  osc.start(t);
+  gain.gain.setValueAtTime(vol, t);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+  osc.stop(t + duration);
+}
+function playCorrect() { playTone(660, 'sine', 0.12, 0.15, 0); playTone(880, 'sine', 0.15, 0.13, 0.1); }
+function playWrong()   { playTone(200, 'sawtooth', 0.25, 0.12, 0); }
+function playSuccess() { [523,659,784,1046].forEach((f,i)=>playTone(f,'sine',0.2,0.14,i*0.12)); }
+function playClick()   { playTone(880, 'sine', 0.05, 0.08); }
+
+// ==================== PC PARTS DATA ====================
+const PC_PARTS = {
+  cpu: {
+    name: 'CPU (Prozessor)',
+    emoji: '🧠',
+    color: '#00BCD4',
+    desc: 'Das Gehirn des Computers. Die CPU verarbeitet alle Berechnungen und Befehle. Sie bestimmt maßgeblich die Geschwindigkeit deines PCs.',
+    facts: [
+      { label: 'Steht für', value: 'Central Processing Unit' },
+      { label: 'Hersteller', value: 'Intel & AMD' },
+      { label: 'Verbindung', value: 'Sitzt im CPU-Sockel des Mainboards' },
+      { label: 'Kühlung', value: 'Braucht immer einen Kühler!' }
+    ],
+    svg: `<svg viewBox="0 0 140 140" width="120" height="120">
+      <rect x="20" y="20" width="100" height="100" rx="8" fill="#263238" stroke="#00BCD4" stroke-width="3"/>
+      <rect x="35" y="35" width="70" height="70" rx="4" fill="#37474F" stroke="#00E5FF" stroke-width="2"/>
+      <text x="70" y="65" text-anchor="middle" font-size="10" fill="#00E5FF" font-family="monospace">CPU</text>
+      <text x="70" y="80" text-anchor="middle" font-size="8" fill="#90A4AE" font-family="monospace">i7-13700K</text>
+      ${Array.from({length:8},(_,i)=>`<rect x="${22+i*12}" y="10" width="6" height="10" rx="2" fill="#9E9E9E"/>`).join('')}
+      ${Array.from({length:8},(_,i)=>`<rect x="${22+i*12}" y="120" width="6" height="10" rx="2" fill="#9E9E9E"/>`).join('')}
+      ${Array.from({length:6},(_,i)=>`<rect x="10" y="${22+i*14}" width="10" height="6" rx="2" fill="#9E9E9E"/>`).join('')}
+      ${Array.from({length:6},(_,i)=>`<rect x="120" y="${22+i*14}" width="10" height="6" rx="2" fill="#9E9E9E"/>`).join('')}
+    </svg>`
+  },
+  mainboard: {
+    name: 'Mainboard',
+    emoji: '🟢',
+    color: '#43A047',
+    desc: 'Das Mainboard (auch Motherboard) ist die Hauptplatine des PCs. Alle anderen Bauteile werden damit verbunden.',
+    facts: [
+      { label: 'Funktion', value: 'Verbindet alle Komponenten' },
+      { label: 'Formfaktor', value: 'ATX, mATX, ITX' },
+      { label: 'Slots', value: 'PCIe, RAM-Slots, M.2, SATA' },
+      { label: 'Wichtig', value: 'CPU und RAM müssen kompatibel sein' }
+    ],
+    svg: `<svg viewBox="0 0 160 120" width="140" height="105">
+      <rect x="5" y="5" width="150" height="110" rx="4" fill="#1B5E20" stroke="#4CAF50" stroke-width="2"/>
+      <rect x="15" y="15" width="55" height="55" rx="3" fill="#2E7D32" stroke="#81C784" stroke-width="1.5"/>
+      <text x="42" y="46" text-anchor="middle" font-size="8" fill="#A5D6A7">CPU</text>
+      <text x="42" y="56" text-anchor="middle" font-size="7" fill="#81C784">Socket</text>
+      <rect x="80" y="15" width="70" height="18" rx="2" fill="#1A3A1A" stroke="#66BB6A" stroke-width="1"/>
+      <rect x="82" y="17" width="30" height="14" rx="1" fill="#263238"/>
+      <text x="97" y="28" text-anchor="middle" font-size="8" fill="#00BCD4">RAM</text>
+      <rect x="118" y="17" width="30" height="14" rx="1" fill="#263238"/>
+      <text x="133" y="28" text-anchor="middle" font-size="8" fill="#00BCD4">RAM</text>
+      <rect x="15" y="78" width="130" height="16" rx="2" fill="#1A3A1A" stroke="#FF5722" stroke-width="1"/>
+      <text x="30" y="90" text-anchor="middle" font-size="8" fill="#FF7043">PCIe x16</text>
+      <rect x="15" y="100" width="80" height="10" rx="2" fill="#1A3A1A" stroke="#FF9800" stroke-width="1"/>
+      <text x="30" y="109" text-anchor="middle" font-size="7" fill="#FFA726">PCIe x1</text>
+      ${Array.from({length:6},(_,i)=>`<circle cx="${110+i*7}" cy="${55}" r="3" fill="#FFD600" stroke="#000" stroke-width="0.5"/>`).join('')}
+      <line x1="15" y1="72" x2="145" y2="72" stroke="#388E3C" stroke-width="0.5" stroke-dasharray="4,3"/>
+    </svg>`
+  },
+  ram: {
+    name: 'RAM (Arbeitsspeicher)',
+    emoji: '💾',
+    color: '#7C4DFF',
+    desc: 'Der RAM speichert temporäre Daten, auf die die CPU schnell zugreifen muss. Mehr RAM = flüssigeres Multitasking.',
+    facts: [
+      { label: 'Steht für', value: 'Random Access Memory' },
+      { label: 'Typen', value: 'DDR4, DDR5' },
+      { label: 'Typische Größe', value: '8 GB, 16 GB, 32 GB' },
+      { label: 'Wichtig', value: 'Flüchtiger Speicher – Daten gehen beim Ausschalten verloren' }
+    ],
+    svg: `<svg viewBox="0 0 160 60" width="140" height="52">
+      <rect x="5" y="10" width="150" height="40" rx="3" fill="#1A237E" stroke="#7C4DFF" stroke-width="2"/>
+      ${Array.from({length:16},(_,i)=>`<rect x="${12+i*9}" y="14" width="6" height="15" rx="1" fill="#3F51B5" stroke="#5C6BC0" stroke-width="0.5"/>`).join('')}
+      ${Array.from({length:8},(_,i)=>`<rect x="${12+i*18}" y="32" width="14" height="14" rx="2" fill="#283593" stroke="#5C6BC0" stroke-width="1"/>`).join('')}
+      <text x="80" y="44" text-anchor="middle" font-size="7" fill="#7C4DFF" font-family="monospace">DDR5-5600 16GB</text>
+      ${Array.from({length:30},(_,i)=>`<rect x="${8+i*5}" y="50" width="3" height="5" rx="0.5" fill="#9E9E9E"/>`).join('')}
+    </svg>`
+  },
+  gpu: {
+    name: 'GPU (Grafikkarte)',
+    emoji: '🎮',
+    color: '#FF6D00',
+    desc: 'Die GPU berechnet Grafiken und Bilder. Für Gaming, 3D-Rendering und KI-Aufgaben unverzichtbar.',
+    facts: [
+      { label: 'Steht für', value: 'Graphics Processing Unit' },
+      { label: 'Hersteller', value: 'NVIDIA & AMD' },
+      { label: 'Anschluss', value: 'PCIe x16 Slot auf dem Mainboard' },
+      { label: 'Ausgänge', value: 'HDMI, DisplayPort' }
+    ],
+    svg: `<svg viewBox="0 0 200 90" width="160" height="72">
+      <rect x="5" y="10" width="190" height="70" rx="6" fill="#BF360C" stroke="#FF6D00" stroke-width="2"/>
+      <rect x="15" y="15" width="80" height="55" rx="4" fill="#4A148C" stroke="#CE93D8" stroke-width="1.5"/>
+      <circle cx="55" cy="42" r="22" fill="#6A1B9A" stroke="#BA68C8" stroke-width="2"/>
+      <circle cx="55" cy="42" r="14" fill="#4A148C" stroke="#CE93D8" stroke-width="1"/>
+      ${Array.from({length:6},(_,i)=>`
+        <line x1="55" y1="42"
+              x2="${55+18*Math.cos(i*60*Math.PI/180)}"
+              y2="${42+18*Math.sin(i*60*Math.PI/180)}"
+              stroke="#CE93D8" stroke-width="4" stroke-linecap="round"/>
+      `).join('')}
+      <rect x="105" y="15" width="80" height="55" rx="4" fill="#1A237E" stroke="#5C6BC0" stroke-width="1.5"/>
+      ${Array.from({length:8},(_,i)=>`<rect x="${110+i*9}" y="20" width="7" height="45" rx="1" fill="#283593" stroke="#3F51B5" stroke-width="0.5"/>`).join('')}
+      <rect x="5" y="72" width="190" height="10" rx="3" fill="#37474F"/>
+      ${Array.from({length:20},(_,i)=>`<rect x="${8+i*9}" y="74" width="6" height="6" rx="0.5" fill="#546E7A"/>`).join('')}
+      <rect x="160" y="25" width="24" height="12" rx="2" fill="#212121" stroke="#FF6D00" stroke-width="1"/>
+      <text x="172" y="35" text-anchor="middle" font-size="7" fill="#FF6D00">HDMI</text>
+      <rect x="160" y="42" width="24" height="12" rx="2" fill="#212121" stroke="#2196F3" stroke-width="1"/>
+      <text x="172" y="52" text-anchor="middle" font-size="6" fill="#2196F3">DP</text>
+    </svg>`
+  },
+  ssd: {
+    name: 'SSD (Festplatte)',
+    emoji: '💿',
+    color: '#00ACC1',
+    desc: 'Die SSD speichert dauerhaft alle Daten – Betriebssystem, Programme und Dateien. Viel schneller als eine HDD.',
+    facts: [
+      { label: 'Steht für', value: 'Solid State Drive' },
+      { label: 'Vorteil', value: 'Sehr schnell, kein Lärm, stoßfest' },
+      { label: 'Anschluss', value: 'M.2 (NVMe) oder SATA' },
+      { label: 'Typische Größe', value: '500 GB bis 4 TB' }
+    ],
+    svg: `<svg viewBox="0 0 160 80" width="140" height="70">
+      <rect x="5" y="10" width="150" height="60" rx="4" fill="#006064" stroke="#00ACC1" stroke-width="2"/>
+      <rect x="15" y="18" width="40" height="25" rx="3" fill="#004D40" stroke="#00BCD4" stroke-width="1.5"/>
+      <text x="35" y="35" text-anchor="middle" font-size="8" fill="#80DEEA">NAND</text>
+      <rect x="65" y="18" width="40" height="25" rx="3" fill="#004D40" stroke="#00BCD4" stroke-width="1.5"/>
+      <text x="85" y="35" text-anchor="middle" font-size="8" fill="#80DEEA">NAND</text>
+      <rect x="115" y="18" width="30" height="25" rx="3" fill="#00363A" stroke="#00ACC1" stroke-width="1"/>
+      <text x="130" y="31" text-anchor="middle" font-size="7" fill="#00BCD4">CTRL</text>
+      <rect x="15" y="52" width="125" height="10" rx="2" fill="#004D40"/>
+      <text x="77" y="61" text-anchor="middle" font-size="8" fill="#80DEEA" font-family="monospace">Samsung 990 Pro 1TB NVMe</text>
+      <rect x="145" y="20" width="10" height="40" rx="1" fill="#00838F"/>
+      ${Array.from({length:4},(_,i)=>`<line x1="145" y1="${24+i*10}" x2="155" y2="${24+i*10}" stroke="#00BCD4" stroke-width="1"/>`).join('')}
+    </svg>`
+  }
+};
+
+// ==================== LEVEL 1 QUESTIONS ====================
+const QUESTIONS = [
+  {
+    type: 'quiz',
+    part: 'cpu',
+    text: 'Was ist die Hauptaufgabe der CPU?',
+    answers: [
+      'Grafiken berechnen',
+      'Daten dauerhaft speichern',
+      'Alle Berechnungen und Befehle verarbeiten',
+      'Strom verteilen'
+    ],
+    correct: 2,
+    explanation: 'Die CPU (Central Processing Unit) ist das Gehirn des Computers. Sie verarbeitet alle Berechnungen und führt Befehle aus.'
+  },
+  {
+    type: 'quiz',
+    part: 'ram',
+    text: 'Wofür steht "RAM"?',
+    answers: [
+      'Random Access Memory',
+      'Read And Memory',
+      'Rapid Archive Module',
+      'Real Application Machine'
+    ],
+    correct: 0,
+    explanation: 'RAM steht für "Random Access Memory" – Arbeitsspeicher. Er speichert temporäre Daten, die die CPU gerade benutzt.'
+  },
+  {
+    type: 'quiz',
+    part: 'ssd',
+    text: 'Was unterscheidet eine SSD von einer HDD?',
+    answers: [
+      'SSD ist langsamer aber billiger',
+      'SSD hat keine beweglichen Teile und ist viel schneller',
+      'SSD benötigt mehr Strom',
+      'Es gibt keinen Unterschied'
+    ],
+    correct: 1,
+    explanation: 'SSDs (Solid State Drives) haben keine beweglichen Teile. Sie sind viel schneller, leiser und stromsparender als HDDs (Hard Disk Drives).'
+  },
+  {
+    type: 'identify',
+    text: 'Welches Bauteil siehst du hier?',
+    showPart: 'gpu',
+    answers: ['CPU', 'Netzteil', 'GPU (Grafikkarte)', 'Mainboard'],
+    correct: 2,
+    explanation: 'Das ist eine GPU (Graphics Processing Unit) – die Grafikkarte! Sie berechnet alle Grafiken und ist besonders beim Gaming wichtig.'
+  },
+  {
+    type: 'quiz',
+    part: 'mainboard',
+    text: 'Was ist die Hauptaufgabe des Mainboards?',
+    answers: [
+      'Bilder ausgeben',
+      'Alle Komponenten verbinden',
+      'Spiele speichern',
+      'Internet herstellen'
+    ],
+    correct: 1,
+    explanation: 'Das Mainboard (Motherboard) ist die zentrale Platine, die alle Komponenten miteinander verbindet – CPU, RAM, GPU, SSD und mehr.'
+  }
+];
+
+// ==================== STATE ====================
+let currentQuestion = 0;
+let score = 0;
+let matchSelectedTerm = null;
+let matchSelectedDef  = null;
+let matchPairs = [];
+let matchMatched = 0;
+
+// ==================== RENDER ====================
+function renderQuestion() {
+  const q = QUESTIONS[currentQuestion];
+  const total = QUESTIONS.length;
+  const pct = Math.round((currentQuestion / total) * 100);
+  document.getElementById('hudProgress').style.width = pct + '%';
+
+  const content = document.getElementById('gameContent');
+  content.innerHTML = '';
+
+  if (q.type === 'quiz' || q.type === 'identify') renderQuiz(q, content);
+  else if (q.type === 'match') renderMatch(q, content);
+}
+
+function renderQuiz(q, container) {
+  const card = document.createElement('div');
+  card.className = 'q-card';
+  const total = QUESTIONS.length;
+  card.innerHTML = `
+    <div class="q-num">Frage ${currentQuestion + 1} von ${total}</div>
+    <div class="q-text">${q.text}</div>
+    <div class="q-part-display">
+      ${q.type === 'identify' ? PC_PARTS[q.showPart].svg : (q.part ? PC_PARTS[q.part].svg : '')}
+    </div>
+    <div class="answers-grid">
+      ${q.answers.map((a, i) => `
+        <button class="answer-btn" onclick="checkAnswer(${i})" id="ans${i}">
+          <span class="answer-letter">${'ABCD'[i]}</span>
+          ${a}
+        </button>
+      `).join('')}
+    </div>
+  `;
+  container.appendChild(card);
+}
+
+function checkAnswer(idx) {
+  const q = QUESTIONS[currentQuestion];
+  const btns = document.querySelectorAll('.answer-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const correct = idx === q.correct;
+  if (correct) {
+    playCorrect();
+    score += 20;
+    document.getElementById('hudScore').textContent = score;
+    btns[idx].classList.add('correct');
+  } else {
+    playWrong();
+    btns[idx].classList.add('wrong');
+    btns[q.correct].classList.add('correct');
+  }
+  showFeedback(correct, q.explanation, q.part || q.showPart);
+}
+
+function showFeedback(correct, explanation, partKey) {
+  const content = document.getElementById('gameContent');
+  const fb = document.createElement('div');
+  fb.className = `feedback-box ${correct ? 'correct' : 'wrong'}`;
+  fb.innerHTML = `
+    <div class="feedback-title">${correct ? '✅ Richtig!' : '❌ Leider falsch'}</div>
+    <p>${explanation}</p>
+    ${partKey ? `<button style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:14px;margin-top:6px;font-family:'Comic Neue',cursive;font-weight:700;" onclick="showPartInfo('${partKey}')">🔍 Mehr über ${PC_PARTS[partKey]?.name} erfahren</button>` : ''}
+    <br>
+    <button class="next-btn" onclick="nextQuestion()">Weiter →</button>
+  `;
+  content.appendChild(fb);
+}
+
+// ==================== MATCH GAME ====================
+function renderMatch(q, container) {
+  matchSelectedTerm = null;
+  matchSelectedDef  = null;
+  matchMatched = 0;
+  matchPairs = [...q.pairs];
+
+  const card = document.createElement('div');
+  card.className = 'q-card match-container';
+  const shuffledDefs = [...q.pairs].sort(() => Math.random() - 0.5);
+
+  card.innerHTML = `
+    <div class="q-num">Frage ${currentQuestion + 1} von ${QUESTIONS.length}</div>
+    <div class="q-text">${q.text}</div>
+    <div class="match-columns">
+      <div>
+        <div class="match-col-title">🔧 BAUTEIL</div>
+        ${q.pairs.map((p, i) => `
+          <div class="match-item" id="term-${i}" onclick="selectTerm(${i})">${p.term}</div>
+        `).join('')}
+      </div>
+      <div>
+        <div class="match-col-title">📋 FUNKTION</div>
+        ${shuffledDefs.map((p, i) => `
+          <div class="match-item" id="def-${i}" onclick="selectDef(${i})" data-def="${p.def}">${p.def}</div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
+}
+
+function selectTerm(i) {
+  if (document.getElementById(`term-${i}`).classList.contains('matched')) return;
+  document.querySelectorAll('.match-item[id^="term-"]').forEach(el => el.classList.remove('selected-term'));
+  matchSelectedTerm = i;
+  document.getElementById(`term-${i}`).classList.add('selected-term');
+  if (matchSelectedDef !== null) tryMatch();
+}
+
+function selectDef(i) {
+  if (document.getElementById(`def-${i}`).classList.contains('matched')) return;
+  document.querySelectorAll('.match-item[id^="def-"]').forEach(el => el.classList.remove('selected-def'));
+  matchSelectedDef = i;
+  document.getElementById(`def-${i}`).classList.add('selected-def');
+  if (matchSelectedTerm !== null) tryMatch();
+}
+
+function tryMatch() {
+  const termEl = document.getElementById(`term-${matchSelectedTerm}`);
+  const defEl  = document.getElementById(`def-${matchSelectedDef}`);
+  const termData = matchPairs[matchSelectedTerm];
+  const defData  = defEl.dataset.def;
+
+  if (termData.def === defData) {
+    playCorrect();
+    termEl.classList.remove('selected-term');
+    defEl.classList.remove('selected-def');
+    termEl.classList.add('matched');
+    defEl.classList.add('matched');
+    matchMatched++;
+    score += 10;
+    document.getElementById('hudScore').textContent = score;
+    matchSelectedTerm = null;
+    matchSelectedDef  = null;
+    if (matchMatched === matchPairs.length) {
+      setTimeout(() => {
+        const content = document.getElementById('gameContent');
+        const fb = document.createElement('div');
+        fb.className = 'feedback-box correct';
+        fb.innerHTML = `<div class="feedback-title">✅ Alle richtig!</div><p>Super, du kennst die Bauteile und ihre Funktionen!</p><button class="next-btn" onclick="nextQuestion()">Weiter →</button>`;
+        content.appendChild(fb);
+      }, 400);
+    }
+  } else {
+    playWrong();
+    termEl.classList.add('wrong-flash');
+    defEl.classList.add('wrong-flash');
+    setTimeout(() => {
+      termEl.classList.remove('selected-term', 'wrong-flash');
+      defEl.classList.remove('selected-def', 'wrong-flash');
+    }, 600);
+    matchSelectedTerm = null;
+    matchSelectedDef  = null;
+  }
+}
+
+// ==================== NEXT QUESTION ====================
+function nextQuestion() {
+  currentQuestion++;
+  if (currentQuestion >= QUESTIONS.length) showResult();
+  else renderQuestion();
+}
+
+// ==================== RESULT ====================
+function showResult() {
+  const maxScore = QUESTIONS.length * 20;
+  const pct = score / maxScore;
+  let starCount = pct >= 0.9 ? 3 : pct >= 0.6 ? 2 : 1;
+  saveStars(1, starCount);
+
+  playSuccess();
+  document.getElementById('hudProgress').style.width = '100%';
+
+  const emoji = starCount === 3 ? '🏆' : starCount === 2 ? '🎉' : '💪';
+  const title = starCount === 3 ? 'Perfekt!' : starCount === 2 ? 'Sehr gut!' : 'Geschafft!';
+  const text  = starCount === 3
+    ? 'Du hast alle Fragen richtig beantwortet – du bist ein echter Hardware Hero!'
+    : starCount === 2
+    ? 'Gute Arbeit! Mit etwas Übung schaffst du auch die 3 Sterne!'
+    : 'Du hast das Level geschafft! Wiederhole es für mehr Sterne.';
+
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultText').textContent  = text;
+
+  const starsEl = document.getElementById('resultStars');
+  starsEl.innerHTML = [1,2,3].map((i,idx) => `<span class="result-star" id="rs${idx}">★</span>`).join('');
+  [1,2,3].forEach((_, i) => {
+    setTimeout(() => {
+      if (i < starCount) document.getElementById(`rs${i}`).classList.add('lit');
+    }, 300 + i * 200);
+  });
+
+  document.getElementById('overlay-result').classList.remove('hidden');
+}
+
+// ==================== PART INFO ====================
+function showPartInfo(key) {
+  const part = PC_PARTS[key];
+  if (!part) return;
+  document.getElementById('infoPartSvg').innerHTML = part.svg;
+  document.getElementById('infoTitle').textContent = part.name;
+  document.getElementById('infoDesc').textContent  = part.desc;
+  document.getElementById('infoFacts').innerHTML = part.facts.map(f =>
+    `<div class="info-fact"><strong>${f.label}:</strong> ${f.value}</div>`
+  ).join('');
+  document.getElementById('overlay-info').classList.remove('hidden');
+}
+function closeInfo() {
+  document.getElementById('overlay-info').classList.add('hidden');
+}
+
+// ==================== PROGRESS (shared with menu) ====================
+function saveStars(level, count) {
+  try {
+    const s = JSON.parse(localStorage.getItem('hw_stars')) || {};
+    s[level] = Math.max(s[level] || 0, count);
+    localStorage.setItem('hw_stars', JSON.stringify(s));
+  } catch(e) {}
+}
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('hudLevel').textContent = 'Level 1';
+  renderQuestion();
+});
+</script>
+</body>
+</html>

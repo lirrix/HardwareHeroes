@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hardware Heroes</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ==================== MAIN MENU ==================== -->
+<div id="screen-menu" class="screen active">
+  <div class="menu-bg-grid"></div>
+
+  <!-- Floating hardware icons (injected by JS) -->
+  <div id="floatingIcons" class="floating-icons-layer"></div>
+
+  <!-- Scanline overlay -->
+  <div class="scanlines"></div>
+
+  <div class="menu-center">
+
+    <!-- LOGO -->
+    <div class="logo-wrap">
+      <div class="logo-burst"></div>
+      <div class="logo-glow-ring"></div>
+      <div class="logo-text">
+        <span class="logo-hw">HARDWARE</span>
+        <span class="logo-heroes">HEROES</span>
+      </div>
+      <div class="logo-sub">🖥️ Das PC-Lernspiel</div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="menu-stats" id="menuStats">
+      <div class="stat-chip">
+        <span class="stat-icon">⭐</span>
+        <span id="statStars">0</span> / 9 Sterne
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-chip">
+        <span class="stat-icon">🏆</span>
+        <span id="statLevels">0</span> / 3 Level
+      </div>
+    </div>
+
+    <!-- NAV -->
+    <nav class="main-nav">
+      <button class="btn-menu btn-play" onclick="showLevelSelect()">
+        <span class="btn-play-icon">▶</span>
+        <span class="btn-play-text">
+          <span class="btn-play-main">SPIELEN</span>
+          <span class="btn-play-sub">Level auswählen</span>
+        </span>
+      </button>
+
+      <div class="btn-row-secondary">
+        <button class="btn-menu btn-sm" onclick="showTutorial()">
+          <span>📖</span> Anleitung
+        </button>
+        <button class="btn-menu btn-sm btn-eval" onclick="playClick(); window.location.href='hardware-heroes-evaluation.html'">
+          <span>📊</span> Evaluation
+        </button>
+        <button class="btn-menu btn-sm" onclick="showCredits()">
+          <span>⭐</span> Credits
+        </button>
+      </div>
+    </nav>
+
+    <div class="sound-toggle-wrap">
+      <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊 Sound AN</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== LEVEL SELECT ==================== -->
+<div id="screen-levelselect" class="screen">
+  <div class="screen-header">
+    <button class="back-btn" onclick="showMenu()">← Menü</button>
+    <h1 class="screen-title">LEVEL AUSWAHL</h1>
+  </div>
+
+  <div class="levels-grid">
+    <!-- Level 1 -->
+    <div class="level-card unlocked" onclick="playClick(); window.location.href='level1.html'">
+      <div class="level-badge">1</div>
+      <div class="level-card-inner">
+        <div class="level-icon">🔩</div>
+        <h2>Die Grundlagen</h2>
+        <p>Lerne die wichtigsten PC-Bauteile kennen und ordne sie richtig zu.</p>
+        <div class="level-stars">
+          <span id="l1s1" class="star">★</span>
+          <span id="l1s2" class="star">★</span>
+          <span id="l1s3" class="star">★</span>
+        </div>
+        <div class="level-diff">
+          <span class="diff-dot active"></span>
+          <span class="diff-dot"></span>
+          <span class="diff-dot"></span>
+        </div>
+        <span class="diff-label">Einfach</span>
+      </div>
+    </div>
+
+    <!-- Level 2 -->
+    <div class="level-card unlocked" onclick="playClick(); window.location.href='level2.html'">
+      <div class="level-badge">2</div>
+      <div class="level-card-inner">
+        <div class="level-icon">🧠</div>
+        <h2>CPU Kommandant</h2>
+        <p>Du bist der Scheduler! Plane Prozesse in der richtigen Reihenfolge in die 3D-CPU ein.</p>
+        <div class="level-stars">
+          <span id="l2s1" class="star">★</span>
+          <span id="l2s2" class="star">★</span>
+          <span id="l2s3" class="star">★</span>
+        </div>
+        <div class="level-diff">
+          <span class="diff-dot active"></span>
+          <span class="diff-dot active"></span>
+          <span class="diff-dot"></span>
+        </div>
+        <span class="diff-label">Mittel</span>
+      </div>
+    </div>
+
+    <!-- Level 3: PC-Baumeister -->
+    <div class="level-card unlocked" onclick="playClick(); window.location.href='level3.html'">
+      <div class="level-badge">3</div>
+      <div class="level-card-inner">
+        <div class="level-icon">🔧</div>
+        <h2>PC-Baumeister</h2>
+        <p>3D-Montage! Klicke Komponenten an und baue sie in die richtigen Slots ein.</p>
+        <div class="level-stars">
+          <span id="l3s1" class="star">★</span>
+          <span id="l3s2" class="star">★</span>
+          <span id="l3s3" class="star">★</span>
+        </div>
+        <div class="level-diff">
+          <span class="diff-dot active"></span>
+          <span class="diff-dot active"></span>
+          <span class="diff-dot active"></span>
+        </div>
+        <span class="diff-label">Profi ⚡</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip-box">
+    💡 <strong>Tipp:</strong> Spiele die Level der Reihe nach für das beste Lernerlebnis!
+  </div>
+</div>
+
+<!-- ==================== GAME SCREEN ==================== -->
+<div id="screen-game" class="screen">
+  <div class="game-hud">
+    <button class="back-btn" onclick="showLevelSelect()">← Verlassen</button>
+    <div class="hud-center">
+      <span class="hud-level" id="hudLevel">Level 1</span>
+      <div class="hud-progress-bar"><div id="hudProgress" class="hud-progress-fill"></div></div>
+    </div>
+    <div class="hud-score">
+      <span>⭐ <span id="hudScore">0</span></span>
+    </div>
+  </div>
+
+  <div id="gameContent" class="game-content"></div>
+</div>
+
+<!-- ==================== TUTORIAL ==================== -->
+<div id="screen-tutorial" class="screen">
+  <div class="screen-header">
+    <button class="back-btn" onclick="showMenu()">← Menü</button>
+    <h1 class="screen-title">ANLEITUNG</h1>
+  </div>
+  <div class="tutorial-content">
+    <div class="tut-step">
+      <div class="tut-icon">1️⃣</div>
+      <div>
+        <h3>Level auswählen</h3>
+        <p>Wähle ein Level aus dem Menü. Fange mit Level 1 an!</p>
+      </div>
+    </div>
+    <div class="tut-step">
+      <div class="tut-icon">2️⃣</div>
+      <div>
+        <h3>Fragen beantworten</h3>
+        <p>Jedes Level hat verschiedene Quiz- und Drag&Drop-Aufgaben zu PC-Komponenten.</p>
+      </div>
+    </div>
+    <div class="tut-step">
+      <div class="tut-icon">3️⃣</div>
+      <div>
+        <h3>Sterne sammeln</h3>
+        <p>Je besser du abschneidest, desto mehr Sterne bekommst du (max. 3 ⭐).</p>
+      </div>
+    </div>
+    <div class="tut-step">
+      <div class="tut-icon">4️⃣</div>
+      <div>
+        <h3>Alles richtig?</h3>
+        <p>Bei falschen Antworten bekommst du eine Erklärung – so lernst du am besten!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CREDITS ==================== -->
+<div id="screen-credits" class="screen">
+  <div class="screen-header">
+    <button class="back-btn" onclick="showMenu()">← Menü</button>
+    <h1 class="screen-title">CREDITS</h1>
+  </div>
+  <div class="credits-content">
+    <div class="credits-star">⭐</div>
+    <h2>Hardware Heroes</h2>
+    <p>Ein interaktives Lernspiel für PC-Grundlagen</p>
+    <div class="credits-divider"></div>
+    <p><strong>Entwickelt von:</strong><br>Luis Genta Angelika und Elyesa</p>
+    <p><strong>Technologien:</strong><br>HTML5 · CSS3 · Vanilla JavaScript</p>
+    <p><strong>Sounds:</strong><br>Web Audio API (generativ)</p>
+    <div class="credits-divider"></div>
+    <p class="credits-quote">"Spielen ist die höchste Form der Forschung!" - Albert Einsteins</p>
+  </div>
+</div>
+
+<!-- ==================== RESULT OVERLAY ==================== -->
+<div id="overlay-result" class="overlay hidden">
+  <div class="result-box">
+    <div id="resultEmoji" class="result-emoji">🎉</div>
+    <h2 id="resultTitle">Geschafft!</h2>
+    <p id="resultText"></p>
+    <div id="resultStars" class="result-stars"></div>
+    <div class="result-buttons">
+      <button class="btn-menu btn-secondary" onclick="showLevelSelect()">Level-Auswahl</button>
+      <button class="btn-menu" id="btnNextLevel" onclick="nextLevel()">Weiter ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PART INFO OVERLAY ==================== -->
+<div id="overlay-info" class="overlay hidden">
+  <div class="info-box">
+    <button class="close-btn" onclick="closeInfo()">✕</button>
+    <div id="infoPartSvg" class="info-part-svg"></div>
+    <h2 id="infoTitle"></h2>
+    <p id="infoDesc"></p>
+    <div id="infoFacts" class="info-facts"></div>
+    <button class="btn-menu" onclick="closeInfo()">Verstanden! 👍</button>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
